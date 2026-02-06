@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Studio {
+  id          String         @id @default(uuid())
+  slug        String         @unique
+  name        String
+  description String?        @db.Text
+  logoUrl     String?
+  bannerUrl   String?
+  website     String?
+  socialLinks Json?
+  category    StudioCategory @default(OTHER)
+  language    String         @default("es")
+  about       String?        @db.Text
+
+  totalPaid       Int @default(0)
+  campaignsCount  Int @default(0)
+  activeCampaigns Int @default(0)
+  balance         Int @default(0)
+
+  joinType   StudioJoinType @default(WAITLIST)
+  isOfficial Boolean        @default(false)
+  isPublic   Boolean        @default(true)
+
+  avgRating   Float @default(0)
+  ratingCount Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members           StudioMember[]
+  joinRequests      StudioJoinRequest[]
+  medias            StudioMedia[]
+  faqs              StudioFAQ[]
+  ratings           StudioRating[]
+  waitlistQuestions  StudioWaitlistQuestion[]
+  waitlistResponses  StudioWaitlistResponse[]
+  invites           StudioInvite[]
+}
+
+model StudioMember {
+  id       String     @id @default(uuid())
+  studioId String
+  userId   String
+  role     StudioRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([userId])
+}
+
+model StudioJoinRequest {
+  id        String                  @id @default(uuid())
+  studioId  String
+  userId    String
+  status    StudioJoinRequestStatus @default(PENDING)
+  message   String?
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([studioId, status])
+}
+
+model StudioWaitlistQuestion {
+  id        String   @id @default(uuid())
+  studioId  String
+  question  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@index([studioId])
+}
+
+model StudioWaitlistResponse {
+  id        String                  @id @default(uuid())
+  studioId  String
+  userId    String
+  answers   Json
+  status    StudioJoinRequestStatus @default(PENDING)
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+}
+
+model StudioMedia {
+  id        String    @id @default(uuid())
+  studioId  String
+  url       String
+  type      MediaType @default(IMAGE)
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@index([studioId])
+}
+
+model StudioFAQ {
+  id        String   @id @default(uuid())
+  studioId  String
+  question  String
+  answer    String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@index([studioId])
+}
+
+model StudioRating {
+  id        String   @id @default(uuid())
+  studioId  String
+  userId    String
+  rating    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([studioId])
+}
+
+model StudioInvite {
+  id        String       @id @default(uuid())
+  studioId  String
+  userId    String
+  role      StudioRole   @default(MODERATOR)
+  status    InviteStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([studioId, userId])
+  @@index([userId, status])
+}
+
+enum StudioCategory {
+  GAMING
+  IRL
+  MUSIC
+  CREATIVE
+  TECH
+  CRYPTO
+  OTHER
+}
+
+enum StudioJoinType {
+  OPEN
+  WAITLIST
+  INVITE_ONLY
+}
+
+enum StudioRole {
+  OWNER
+  MODERATOR
+  MEMBER
+}
+
+enum StudioJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
